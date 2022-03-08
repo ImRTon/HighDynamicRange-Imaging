@@ -7,7 +7,7 @@ from PIL import Image
 
 def get_parser():
     parser = argparse.ArgumentParser(description='my description')
-    parser.add_argument('-i', '--input_dir', default='./test_imgs', type=str, help='Folder of input images.')
+    parser.add_argument('-i', '--input_dir', default='./imgs', type=str, help='Folder of input images.')
     return parser
 
 def imgImportFromPil(img_path: str):
