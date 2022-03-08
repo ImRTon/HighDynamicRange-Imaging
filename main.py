@@ -16,11 +16,10 @@ def imgImportFromPil(img_path: str):
     return cv_img
 
 if __name__ == '__main__':
-    img_paths = []
     img_contents = []
     '''
     [
-        IMGNAME: {
+        {
             "filepath": FILEPATH,
             "data": OPENCV_IMG
         }
@@ -34,9 +33,11 @@ if __name__ == '__main__':
     for file in os.listdir(args.input_dir):
         file_lower = file.lower()
         if file_lower.endswith('.jpg') or file_lower.endswith('.png'):
-            img_paths.append(os.path.join(args.input_dir, file_lower))
-    
-    print("img paths:", img_paths)
+            img_filePath = os.path.join(args.input_dir, file_lower)
+            img_contents.append({
+                'filepath': img_filePath,
+                'data': imgImportFromPil(img_filePath)
+            })
 
-    imgAlignUtils.img2MTB(imgImportFromPil(img_paths[0]))
+    imgAlignUtils.img2MTB(img_contents[0]['data'])
 
