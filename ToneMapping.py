@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import math
 
-def toneMapping_Reinhard(radianceMap, channel, alpha):
+def toneMapping_Reinhard(radianceMap, alpha):
     height = radianceMap.shape[0]
     width = radianceMap.shape[1]
     Lw = np.zeros((height, width))
@@ -11,7 +11,8 @@ def toneMapping_Reinhard(radianceMap, channel, alpha):
     for row in range(height):
         for col in range(width):
             # Convert from rgb to luminance
-            Lw[row][col] = radianceMap[row][col][channel]
+            [r, g, b] = radianceMap[row][col]
+            Lw[row][col] = r * 0.2125 + g * 0.7154 + b * 0.0721
             LwBar += math.log(Lw[row][col] + 0.000001)
     
     # Compute LwBar
@@ -29,7 +30,20 @@ def toneMapping_Reinhard(radianceMap, channel, alpha):
     Lwhite2 = Lwhite * Lwhite
     Ld = (Lm * (1 + Lm / Lwhite2)) / (1 + Lm)
 
-    return Ld
+    return Lw, Ld
+
+# ref: https://github.com/brunopop/hdr/blob/master/HDR/Tonemap.cpp
+# mapping from luminance to RGB
+def mapToRGB(Lw, Ld, radianceMap):
+    height = radianceMap.shape[0]
+    width = radianceMap.shape[1]
+    result = np.zeros((height, width, 3))
+
+    for row in range(height):
+        for col in range(width):
+            result[row][col] = Ld[row][col] * radianceMap[row][col] / Lw[row][col]
+
+    return result
 
 # Load testing hdr file
 img = cv2.imread("./imgs/memorial.hdr", flags=cv2.IMREAD_ANYDEPTH)
@@ -39,9 +53,11 @@ result = np.ndarray(shape=img.shape)
 result2 = np.ndarray(shape=img.shape)
 
 # Test different alpha value
-for channel in range(0,3):
-    result[:,:,channel] = toneMapping_Reinhard(img, channel, alpha=0.7)
-    result2[:,:,channel] = toneMapping_Reinhard(img, channel, alpha=0.1)
+Lw1, Ld1 = toneMapping_Reinhard(img, alpha=0.7)
+Lw2, Ld2 = toneMapping_Reinhard(img, alpha=0.1)
+
+result = mapToRGB(Lw1, Ld1, img)
+result2 = mapToRGB(Lw2, Ld2, img)
 
 cv2.imshow('HDR', img)
 cv2.imshow('LDR_0.7', result)
