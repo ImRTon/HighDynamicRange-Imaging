@@ -1,4 +1,5 @@
 import argparse
+from distutils.util import strtobool
 import cv2
 import numpy as np
 import os
@@ -8,6 +9,7 @@ from PIL import Image
 def get_parser():
     parser = argparse.ArgumentParser(description='my description')
     parser.add_argument('-i', '--input_dir', default='./imgs', type=str, help='Folder of input images.')
+    parser.add_argument('-a', '--align_img', default='True', type=str, help='Whether to align img or not.')
     return parser
 
 def imgImportFromPil(img_path: str):
@@ -24,7 +26,8 @@ if __name__ == '__main__':
             "data": OPENCV_IMG,
             "MTBImg": (MTB_OPENCV_IMG, MASK_OPENCV_IMG),
             "offset": {"x": int, "y": int},
-            "alignedImg" : OPENCV_IMG
+            "alignedImg": OPENCV_IMG,
+            "brightness": INT
         }
     ]
     '''
@@ -32,24 +35,46 @@ if __name__ == '__main__':
     parser = get_parser()
     args = parser.parse_args()
     print(args.input_dir)
-
+    av_brightness = 0
     for file in os.listdir(args.input_dir):
         file_lower = file.lower()
         if file_lower.endswith('.jpg') or file_lower.endswith('.png'):
             img_filePath = os.path.join(args.input_dir, file_lower)
             img = imgImportFromPil(img_filePath)
+            img_mean = cv2.mean(img)
             img_contents.append({
                 'filepath': img_filePath,
                 'data': img,
-                'MTBImg': imgAlignUtils.img2MTB(img)
+                'MTBImg': imgAlignUtils.img2MTB(img),
+                "offset": {"x": 0, "y": 0},
+                'brightness': img_mean[2] * 0.299 + img_mean[1] * 0.587 + img_mean[0] * 0.114
             })
-    imgAlignUtils.try_align(img_contents)
+            if not strtobool(args.align_img):
+                img_contents[-1]['alignedImg'] = img
+            av_brightness += img_mean[2] * 0.299 + img_mean[1] * 0.587 + img_mean[0] * 0.114
+    print("align?", args.align_img)
+    if strtobool(args.align_img):
+        # Sort images by its brightness
+        sorted(img_contents, key = lambda s: s['brightness'])
+        av_brightness = av_brightness / len(img_contents)
+        for i in range(len(img_contents) - 1, 0, -1):
+            if img_contents[i]['brightness'] > av_brightness:
+                mid_img_content = img_contents.pop(i)
+                img_contents.insert(0, mid_img_content)
+                break
+        
+        imgAlignUtils.try_align(img_contents)
 
-    for img_content in img_contents:
-        print(img_content["offset"])
+        # Offset print
+        print("Offsets:")
+        for img_content in img_contents:
+            print(img_content["offset"])
+        
+        imgAlignUtils.crop_imgs(img_contents)
+
     
-    imgAlignUtils.crop_imgs(img_contents)
-    
+    # Test block begin
+    ###############################
     av_img = None
     av_img_no_align = None
     av_img_mtb = None
@@ -61,8 +86,6 @@ if __name__ == '__main__':
         beta = 1.0 - alpha
         av_img = cv2.addWeighted(img_content['alignedImg'], alpha, av_img, beta, 0.0)
     
-    # Test block begin
-    ###############################
     for i, img_content in enumerate(img_contents):
         if av_img_no_align is None:
             av_img_no_align = img_content['data']

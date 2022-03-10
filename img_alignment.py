@@ -31,7 +31,9 @@ def img2MTB(img):
             mid_index = i
             break
     _, img_th = cv2.threshold(mtb_img, mid_index, 255, cv2.THRESH_BINARY)
-    img_mask = cv2.inRange(mtb_img, mid_index - 10, mid_index + 10)
+    img_mask = 255 - cv2.inRange(mtb_img, mid_index - 10, mid_index + 10)
+    #cv2.imshow('mask', img_mask)
+    #cv2.waitKey()
     return img_th, img_mask
 
 def try_align(img_contents, depth=4):
@@ -40,7 +42,6 @@ def try_align(img_contents, depth=4):
     for img_content in img_contents:
         if std_img_content is None:
             std_img_content = img_content
-            img_content['offset'] = {"x": 0, "y": 0}
             height, width = std_img_content['MTBImg'][0].shape
             depth = max(1, int(math.log2(min(height, width)) - 4))
             continue
