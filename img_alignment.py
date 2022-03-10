@@ -1,5 +1,4 @@
 import math
-from turtle import width
 import cv2
 import numpy as np
 
@@ -100,3 +99,38 @@ def crop_imgs(img_contents):
     for img_content in img_contents:
         offset_x, offset_y = img_content['offset']["x"], img_content['offset']["y"]
         img_content['alignedImg'] = img_content['data'][maxY - offset_y:height + maxY - offset_y, maxX - offset_x:width + maxX - offset_x]
+
+def test(img_contents):
+    av_img = None
+    av_img_no_align = None
+    av_img_mtb = None
+    for i, img_content in enumerate(img_contents):
+        if av_img is None:
+            av_img = img_content['alignedImg']
+            continue
+        alpha = 1.0/(i + 1)
+        beta = 1.0 - alpha
+        av_img = cv2.addWeighted(img_content['alignedImg'], alpha, av_img, beta, 0.0)
+    
+    for i, img_content in enumerate(img_contents):
+        if av_img_no_align is None:
+            av_img_no_align = img_content['data']
+            continue
+        alpha = 1.0/(i + 1)
+        beta = 1.0 - alpha
+        av_img_no_align = cv2.addWeighted(img_content['data'], alpha, av_img_no_align, beta, 0.0)
+    
+    for i, img_content in enumerate(img_contents):
+        if av_img_mtb is None:
+            av_img_mtb = img_content['MTBImg'][0]
+            continue
+        alpha = 1.0/(i + 1)
+        beta = 1.0 - alpha
+        av_img_mtb = cv2.addWeighted(img_content['MTBImg'][0], alpha, av_img_mtb, beta, 0.0)
+
+    cv2.imshow("res", av_img)
+    cv2.imshow("ori", av_img_no_align)
+    cv2.imshow("mtb", av_img_mtb)
+    cv2.imwrite('D://ori_img.png', av_img_no_align)
+    cv2.imwrite('D://aligned_img.png', av_img)
+    cv2.waitKey()

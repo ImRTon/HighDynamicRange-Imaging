@@ -1,21 +1,30 @@
 import argparse
+import math
 from distutils.util import strtobool
+from typing import List
 import cv2
 import numpy as np
 import os
 import img_alignment as imgAlignUtils
+import hdr_utils
 from PIL import Image
+from PIL.ExifTags import TAGS
+import exifread
+import matplotlib.pyplot as plt
 
 def get_parser():
     parser = argparse.ArgumentParser(description='my description')
     parser.add_argument('-i', '--input_dir', default='./imgs', type=str, help='Folder of input images.')
     parser.add_argument('-a', '--align_img', default='True', type=str, help='Whether to align img or not.')
+    parser.add_argument('-s', '--sample_method', default='uniform', type=str, help='The way to sample points [uniform / random]')
     return parser
 
 def imgImportFromPil(img_path: str):
     pil_img = Image.open(img_path).convert("RGB")
     cv_img = cv2.cvtColor(np.asarray(pil_img), cv2.COLOR_RGB2BGR)
+    exif = pil_img.getexif()
     return cv_img
+
 
 if __name__ == '__main__':
     img_contents = []
@@ -25,7 +34,7 @@ if __name__ == '__main__':
             "filepath": FILEPATH,
             "data": OPENCV_IMG,
             "MTBImg": (MTB_OPENCV_IMG, MASK_OPENCV_IMG),
-            "offset": {"x": int, "y": int},
+            "offset": {"x": int, "y": int}, # 1 means shift left or top, -1 means shift right or down
             "alignedImg": OPENCV_IMG,
             "brightness": INT
         }
@@ -34,7 +43,6 @@ if __name__ == '__main__':
 
     parser = get_parser()
     args = parser.parse_args()
-    print(args.input_dir)
     av_brightness = 0
     for file in os.listdir(args.input_dir):
         file_lower = file.lower()
@@ -42,17 +50,34 @@ if __name__ == '__main__':
             img_filePath = os.path.join(args.input_dir, file_lower)
             img = imgImportFromPil(img_filePath)
             img_mean = cv2.mean(img)
+            exif = {}
+            # Exif read
+            with open(img_filePath, 'rb') as file:
+                tags = exifread.process_file(file, details=False)
+                # for key, val in tags.items():
+                #     print(key, val)
+                exif['exposure_time'] = eval(str(tags['EXIF ExposureTime']))
+                # exif['iso'] = int(str(tags['EXIF ISOSpeedRatings']))
+                # exif['focal_len'] = int(str(tags['EXIF FNumber']))
             img_contents.append({
                 'filepath': img_filePath,
                 'data': img,
                 'MTBImg': imgAlignUtils.img2MTB(img),
                 "offset": {"x": 0, "y": 0},
-                'brightness': img_mean[2] * 0.299 + img_mean[1] * 0.587 + img_mean[0] * 0.114
+                'brightness': img_mean[2] * 0.299 + img_mean[1] * 0.587 + img_mean[0] * 0.114,
+                'exif': exif
             })
+            '''
+                exif
+                {
+                    "exposure_time": float
+                }
+            '''
+
             if not strtobool(args.align_img):
                 img_contents[-1]['alignedImg'] = img
             av_brightness += img_mean[2] * 0.299 + img_mean[1] * 0.587 + img_mean[0] * 0.114
-    print("align?", args.align_img)
+    
     if strtobool(args.align_img):
         # Sort images by its brightness
         sorted(img_contents, key = lambda s: s['brightness'])
@@ -72,42 +97,29 @@ if __name__ == '__main__':
         
         imgAlignUtils.crop_imgs(img_contents)
 
-    
-    # Test block begin
-    ###############################
-    av_img = None
-    av_img_no_align = None
-    av_img_mtb = None
-    for i, img_content in enumerate(img_contents):
-        if av_img is None:
-            av_img = img_content['alignedImg']
-            continue
-        alpha = 1.0/(i + 1)
-        beta = 1.0 - alpha
-        av_img = cv2.addWeighted(img_content['alignedImg'], alpha, av_img, beta, 0.0)
-    
-    for i, img_content in enumerate(img_contents):
-        if av_img_no_align is None:
-            av_img_no_align = img_content['data']
-            continue
-        alpha = 1.0/(i + 1)
-        beta = 1.0 - alpha
-        av_img_no_align = cv2.addWeighted(img_content['data'], alpha, av_img_no_align, beta, 0.0)
-    
-    for i, img_content in enumerate(img_contents):
-        if av_img_mtb is None:
-            av_img_mtb = img_content['MTBImg'][0]
-            continue
-        alpha = 1.0/(i + 1)
-        beta = 1.0 - alpha
-        av_img_mtb = cv2.addWeighted(img_content['MTBImg'][0], alpha, av_img_mtb, beta, 0.0)
+    # imgAlignUtils.test(img_contents)
 
-    cv2.imshow("res", av_img)
-    cv2.imshow("ori", av_img_no_align)
-    cv2.imshow("mtb", av_img_mtb)
-    cv2.imwrite('D://ori_img.png', av_img_no_align)
-    cv2.imwrite('D://aligned_img.png', av_img)
-    cv2.waitKey()
-    ###############################
-    # Test block end
+    ## HDR
+    sample_pixel_vals = [[], [], []] # BGR
+    pixel_vals = [[], [], []] # BGR
+    exposures = []
+    lamba = 30.0
+    weightings = []
+
+    hdr_utils.set_hdr_parameters(img_contents, pixel_vals, sample_pixel_vals, exposures, weightings, args.sample_method)
+
+    rg, lE = hdr_utils.g_solver(sample_pixel_vals[2], exposures, lamba, weightings)
+    gg, _ = hdr_utils.g_solver(sample_pixel_vals[1], exposures, lamba, weightings)
+    bg, _ = hdr_utils.g_solver(sample_pixel_vals[0], exposures, lamba, weightings)
+
+    plt.figure(figsize=(10,10))
+    plt.plot(rg,range(256), 'r')
+    plt.plot(gg,range(256), 'g')
+    plt.plot(bg,range(256), 'b')
+    plt.ylabel('Z (Energy)')
+    plt.xlabel('log2(X)')
+    plt.show()
+
+
+
 
