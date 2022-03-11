@@ -3,3 +3,4 @@ opencv-python
 Pillow
 exifread
 matplotlib
+tqdm

@@ -11,6 +11,8 @@ from PIL import Image
 from PIL.ExifTags import TAGS
 import exifread
 import matplotlib.pyplot as plt
+from tqdm import tqdm
+# import ToneMapping
 
 def get_parser():
     parser = argparse.ArgumentParser(description='my description')
@@ -120,6 +122,14 @@ if __name__ == '__main__':
     plt.xlabel('log2(X)')
     plt.show()
 
+    img_shape = img_contents[0]['alignedImg'].shape
 
+    hdr_img = hdr_utils.get_radiance_map(img_contents, [bg, gg, rg], exposures, weightings, img_shape)
+    
+    plt.figure(figsize=(12, 8))
+    plt.imshow(np.log(cv2.cvtColor(hdr_img, cv2.COLOR_BGR2GRAY)), cmap='jet')
+    plt.colorbar()
+    plt.show()
 
+    # ToneMapping.toneMapping_Reinhard(hdr_img, 0.5)
 

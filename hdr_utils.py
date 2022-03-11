@@ -3,6 +3,7 @@ from typing import List
 import numpy as np
 import cv2
 import math
+from tqdm import tqdm
 
 def set_hdr_parameters(img_contents, pixel_vals: List, sample_pixel_vals: List, exposures: List, weightings: List, sample_method: str):
     for i in range(128):
@@ -54,8 +55,22 @@ def g_solver(Z: List, B: List, lamba, weighting):
 
     return g, logE
 
-def get_radiance_map(imgs_flat: List, response_curves: List, exposures: List, weightings: List, img_shape):
-
+def get_radiance_map(img_contents, response_curves: List, exposures: List, weightings: List, img_shape):
+    print("Counting radiance map")
     hdr = np.zeros(img_shape, dtype=np.float32)
-    for i in range(3):
-        pass
+    progress = tqdm(total=img_shape[0])
+    for row in range(img_shape[0]):
+        for col in range(img_shape[1]):
+            denominator = 0
+            numerator = 0
+            for channel in range(img_shape[2]):
+                for i, img_content in enumerate(img_contents):
+                    img = img_content['alignedImg']
+                    Z = img[row][col][channel]
+                    numerator += weightings[Z] * (response_curves[channel][Z] -exposures[i])
+                    denominator += weightings[Z]
+            hdr[row][col] = math.exp(numerator / denominator)
+        progress.update(1)
+    progress.close()
+
+    return hdr
