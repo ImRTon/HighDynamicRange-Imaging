@@ -23,9 +23,11 @@ pip install -r requirements.txt
 ```
 
 ## Run
--i --input_dir INPUT_DIR 
--a --align_img `True` / `False` 
+-i --input_dir INPUT_DIR\
+-a --align_img `True` / `False`\
 -s --sample_method `uniform` / `random` 
 ```
 python main.py -i INPUT_DIR -a ALIGN_IMG_OR_NOT -s SAMPLE_METHOD
 ```
+
+![](./radiance_map.png)

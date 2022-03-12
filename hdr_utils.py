@@ -7,9 +7,9 @@ from tqdm import tqdm
 
 def set_hdr_parameters(img_contents, pixel_vals: List, sample_pixel_vals: List, exposures: List, weightings: List, sample_method: str):
     for i in range(128):
-        weightings.append(i)
+        weightings.append(max(0.001, i))
     for i in range(127, -1, -1):
-        weightings.append(i)
+        weightings.append(max(0.001, i))
     # weightings = [int(127.5 - abs(z - 127.5)) for z in range(256)]
     for img_content in img_contents:
         for i in range(3):
@@ -69,7 +69,8 @@ def get_radiance_map(img_contents, response_curves: List, exposures: List, weigh
                     Z = img[row][col][channel]
                     numerator += weightings[Z] * (response_curves[channel][Z] -exposures[i])
                     denominator += weightings[Z]
-            hdr[row][col] = math.exp(numerator / denominator)
+            # hdr[row][col] = math.exp(numerator / denominator)
+            hdr[row][col] = pow(2, numerator / denominator)
         progress.update(1)
     progress.close()
 
