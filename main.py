@@ -12,7 +12,7 @@ from PIL.ExifTags import TAGS
 import exifread
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-# import ToneMapping
+import ToneMapping
 
 def get_parser():
     parser = argparse.ArgumentParser(description='my description')
@@ -131,5 +131,8 @@ if __name__ == '__main__':
     plt.colorbar()
     plt.show()
 
-    # ToneMapping.toneMapping_Reinhard(hdr_img, 0.5)
-
+    ## Tone mapping
+    print("Start tone mapping")
+    Lw, Ld = ToneMapping.toneMapping_Reinhard(hdr_img, 0.3)
+    result = ToneMapping.mapToRGB(Lw, Ld, hdr_img)
+    cv2.imwrite("ldr_0.3.jpg", result)

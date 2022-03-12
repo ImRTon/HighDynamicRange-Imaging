@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import math
+from tqdm import tqdm
 
 def toneMapping_Reinhard(radianceMap, alpha):
     height = radianceMap.shape[0]
@@ -8,24 +9,28 @@ def toneMapping_Reinhard(radianceMap, alpha):
     Lw = np.zeros((height, width))
     LwBar = 0.0
     # Global operator
+    print("Compute LwBar")
+    progress = tqdm(total=height + 1)
     for row in range(height):
         for col in range(width):
             # Convert from rgb to luminance
             [r, g, b] = radianceMap[row][col]
             Lw[row][col] = r * 0.2125 + g * 0.7154 + b * 0.0721
             LwBar += math.log(Lw[row][col] + 0.000001)
+        progress.update(1)
     
     # Compute LwBar
     LwBar = math.exp(LwBar / (height * width))
-    print(LwBar)
+    progress.update(1)
+    progress.close()
 
     # Compute Lm
     Lm = Lw * alpha / LwBar
-    #print(Lm)
     
     # Compute Ld
     # Find maximum luminance from all pixels
-    Lwhite = np.max(Lm)
+    sortedLw = np.sort(Lw.flatten())
+    Lwhite = sortedLw[sortedLw.shape[0] - 5000]
     print(Lwhite)
     Lwhite2 = Lwhite * Lwhite
     Ld = (Lm * (1 + Lm / Lwhite2)) / (1 + Lm)
@@ -39,27 +44,12 @@ def mapToRGB(Lw, Ld, radianceMap):
     width = radianceMap.shape[1]
     result = np.zeros((height, width, 3))
 
+    print("Compute RGB mapping")
+    progress = tqdm(total=height)
     for row in range(height):
         for col in range(width):
-            result[row][col] = Ld[row][col] * radianceMap[row][col] / Lw[row][col]
+            result[row][col] = Ld[row][col] * radianceMap[row][col] / Lw[row][col] * 255
+        progress.update(1)
+    progress.close()
 
     return result
-
-# Load testing hdr file
-img = cv2.imread("./imgs/memorial.hdr", flags=cv2.IMREAD_ANYDEPTH)
-img = np.array(img)
-
-result = np.ndarray(shape=img.shape)
-result2 = np.ndarray(shape=img.shape)
-
-# Test different alpha value
-Lw1, Ld1 = toneMapping_Reinhard(img, alpha=0.7)
-Lw2, Ld2 = toneMapping_Reinhard(img, alpha=0.1)
-
-result = mapToRGB(Lw1, Ld1, img)
-result2 = mapToRGB(Lw2, Ld2, img)
-
-cv2.imshow('HDR', img)
-cv2.imshow('LDR_0.7', result)
-cv2.imshow('LDR_0.3', result2)
-cv2.waitKey(0)

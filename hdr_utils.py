@@ -61,16 +61,17 @@ def get_radiance_map(img_contents, response_curves: List, exposures: List, weigh
     progress = tqdm(total=img_shape[0])
     for row in range(img_shape[0]):
         for col in range(img_shape[1]):
-            denominator = 0
-            numerator = 0
             for channel in range(img_shape[2]):
+                denominator = 0
+                numerator = 0
                 for i, img_content in enumerate(img_contents):
                     img = img_content['alignedImg']
                     Z = img[row][col][channel]
                     numerator += weightings[Z] * (response_curves[channel][Z] -exposures[i])
                     denominator += weightings[Z]
+                hdr[row][col][channel] = pow(2, numerator / denominator)
             # hdr[row][col] = math.exp(numerator / denominator)
-            hdr[row][col] = pow(2, numerator / denominator)
+            # hdr[row][col] = pow(2, numerator / denominator)
         progress.update(1)
     progress.close()
 
