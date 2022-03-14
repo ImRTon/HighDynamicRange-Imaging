@@ -1,6 +1,7 @@
 import math
 import cv2
 import numpy as np
+from tqdm import tqdm
 
 def img2MTB(img):
     """_summary_
@@ -38,6 +39,8 @@ def img2MTB(img):
 def try_align(img_contents, depth=4):
     # Use first image as standard
     std_img_content = None
+    print("Image alignment begins.")
+    progress = tqdm(total=len(img_contents))
     for img_content in img_contents:
         if std_img_content is None:
             std_img_content = img_content
@@ -84,6 +87,8 @@ def try_align(img_contents, depth=4):
                 ori_mtb_img = ori_mtb_img[y0:y1, x0:x1]
             # print(best_offset, best_pix_count)
         # print("RES:", ori_mtb_img.shape, img_content["offset"])
+        progress.update(1)
+    progress.close()
 
 def crop_imgs(img_contents):
     minX, maxX, minY, maxY = 0, 0, 0, 0

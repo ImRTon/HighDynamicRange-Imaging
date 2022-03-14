@@ -119,12 +119,12 @@ if __name__ == '__main__':
     plt.plot(gg,range(256), 'g')
     plt.plot(bg,range(256), 'b')
     plt.ylabel('Z (Energy)')
-    plt.xlabel('log2(X)')
+    plt.xlabel('log(X)')
     plt.show()
 
     img_shape = img_contents[0]['alignedImg'].shape
 
-    hdr_img = hdr_utils.get_radiance_map(img_contents, [bg, gg, rg], exposures, weightings, img_shape)
+    hdr_img = hdr_utils.get_radiance_map_np(pixel_vals, [bg, gg, rg], np.array(exposures), np.array(weightings), img_shape)
     
     plt.figure(figsize=(12, 8))
     plt.imshow(np.log(cv2.cvtColor(hdr_img, cv2.COLOR_BGR2GRAY)), cmap='jet')
@@ -133,6 +133,9 @@ if __name__ == '__main__':
 
     ## Tone mapping
     print("Start tone mapping")
-    Lw, Ld = ToneMapping.toneMapping_Reinhard(hdr_img, 0.3)
-    result = ToneMapping.mapToRGB(Lw, Ld, hdr_img)
+    Lw, Ld = ToneMapping.toneMapping_Reinhard_np(hdr_img, 0.3)
+    result = ToneMapping.mapToRGB_np(Lw, Ld, hdr_img)
+    
     cv2.imwrite("ldr_0.3.jpg", result)
+    cv2.imshow('Result', result)
+    cv2.waitKey()

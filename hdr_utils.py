@@ -1,9 +1,11 @@
+import enum
 from random import random
 from typing import List
 import numpy as np
 import cv2
 import math
 from tqdm import tqdm
+import gc
 
 def set_hdr_parameters(img_contents, pixel_vals: List, sample_pixel_vals: List, exposures: List, weightings: List, sample_method: str):
     for i in range(128):
@@ -14,12 +16,12 @@ def set_hdr_parameters(img_contents, pixel_vals: List, sample_pixel_vals: List, 
     for img_content in img_contents:
         for i in range(3):
             img_channel = img_content['alignedImg'][:, :, i]
-            pixel_vals[i].append(img_channel.flatten())
+            pixel_vals[i].append(img_channel.astype(int).flatten())
             if sample_method.lower() == "random":
                 sample_pixel_vals[i].append(np.random.choice(img_channel.flatten(), size=100, replace=False))
             else:
                 sample_pixel_vals[i].append(cv2.resize(img_channel, (10, 10)).flatten())
-        exposures.append(math.log2(img_content['exif']['exposure_time']))
+        exposures.append(math.log(img_content['exif']['exposure_time']))
 
 def g_solver(Z: List, B: List, lamba, weighting):
     n = 256
@@ -47,7 +49,6 @@ def g_solver(Z: List, B: List, lamba, weighting):
         A[k][i+1] = -2 * lamba * weighting[i+1]
         A[k][i+2] = lamba * weighting[i+1]
         k += 1
-
     # Solve the system using SVD
     x = np.linalg.lstsq(A, b, rcond=None)[0]
     g = x[:n]
@@ -76,3 +77,19 @@ def get_radiance_map(img_contents, response_curves: List, exposures: List, weigh
     progress.close()
 
     return hdr
+
+def get_radiance_map_np(pixel_vals, response_curves, exposures, weightings, img_shape):
+    hdr = np.zeros((img_shape[0] * img_shape[1], img_shape[2]), dtype=np.float32)
+    progress = tqdm(total=len(pixel_vals) * len(pixel_vals[0]))
+    for i, channel in enumerate(pixel_vals):
+        denominator = np.zeros((img_shape[0] * img_shape[1]), dtype=np.float32)
+        numerator = np.zeros((img_shape[0] * img_shape[1]), dtype=np.float32)
+        for j, img_channel in enumerate(channel):
+            numerator += weightings[img_channel] * (response_curves[i][img_channel].flatten() - exposures[j])
+            denominator += weightings[img_channel]
+            progress.update(1)
+        hdr[:, i] = np.exp(numerator / denominator)
+    progress.close()
+    hdr = hdr.reshape(img_shape)
+    return hdr
+
