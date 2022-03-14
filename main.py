@@ -137,5 +137,3 @@ if __name__ == '__main__':
     result = ToneMapping.mapToRGB_np(Lw, Ld, hdr_img)
     
     cv2.imwrite("ldr_0.3.jpg", result)
-    cv2.imshow('Result', result)
-    cv2.waitKey()

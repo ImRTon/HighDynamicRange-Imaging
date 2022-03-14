@@ -63,7 +63,7 @@ def toneMapping_Reinhard_np(radianceMap, alpha):
     rMapFlat = radianceMap.reshape(height * width, radianceMap.shape[2])
     Lw = np.dot(rMapFlat, np.array([0.0721, 0.7154, 0.2125]))
     # Compute LwBar
-    LwBar = math.exp(np.sum( + 0.000001) / (height * width))
+    LwBar = math.exp(np.sum(np.log(Lw + 0.000001)) / (height * width))
 
     Lm = Lw * alpha / LwBar
     sortedLw = np.sort(Lw)
@@ -76,9 +76,8 @@ def mapToRGB_np(Lw, Ld, radianceMap):
     height = radianceMap.shape[0]
     width = radianceMap.shape[1]
     result = np.zeros((height, width, radianceMap.shape[2]))
-
     print("Compute RGB mapping")
-    result[:, :, 0] = Ld * radianceMap[:, :, 0] / Lw * 255
-    result[:, :, 1] = Ld * radianceMap[:, :, 1] / Lw * 255
-    result[:, :, 2] = Ld * radianceMap[:, :, 2] / Lw * 255
+    result[:, :, 0] = np.minimum(Ld * radianceMap[:, :, 0] / Lw * 255, 255)
+    result[:, :, 1] = np.minimum(Ld * radianceMap[:, :, 1] / Lw * 255, 255)
+    result[:, :, 2] = np.minimum(Ld * radianceMap[:, :, 2] / Lw * 255, 255)
     return result
