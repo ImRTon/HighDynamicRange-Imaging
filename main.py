@@ -19,6 +19,7 @@ def get_parser():
     parser.add_argument('-i', '--input_dir', default='./imgs', type=str, help='Folder of input images.')
     parser.add_argument('-a', '--align_img', default='True', type=str, help='Whether to align img or not.')
     parser.add_argument('-s', '--sample_method', default='uniform', type=str, help='The way to sample points [uniform / random]')
+    parser.add_argument('-k', '--scene_key', default='0.3', type=str, help='How light or dark the scene is. [0.0, 1.0]')
     return parser
 
 def imgImportFromPil(img_path: str):
@@ -133,7 +134,8 @@ if __name__ == '__main__':
 
     ## Tone mapping
     print("Start tone mapping")
-    Lw, Ld = ToneMapping.toneMapping_Reinhard_np(hdr_img, 0.3)
+    key = float(args.scene_key)
+    Lw, Ld = ToneMapping.toneMapping_Reinhard_np(hdr_img, key)
     result = ToneMapping.mapToRGB_np(Lw, Ld, hdr_img)
     
-    cv2.imwrite("ldr_0.3.jpg", result)
+    cv2.imwrite("ldr_" + str(key) + ".jpg", result)
