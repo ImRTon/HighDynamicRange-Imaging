@@ -36,7 +36,7 @@ python main.py -i INPUT_DIR -a ALIGN_IMG_OR_NOT -s SAMPLE_METHOD
 ## 成果
 ### 曾經風光的巨輪　＠基隆港
 #### 原圖
-![](./our_imgs/ship_5.jpg)
+![](./our_imgs/ship/ship_5.jpg)
 #### Response Curve
 ![](./results/ship/ship_response_curve.png)
 #### Radiance Map
