@@ -28,12 +28,25 @@ pip install -r requirements.txt
 ## Run
 -i --input_dir INPUT_DIR\
 -a --align_img `True` / `False`\
--s --sample_method `uniform` / `random` 
+-p --plot `True` / `False`\
+-s --sample_method `uniform` / `random`\
+-k --key [0 ~ 1]
+
 ```
 python main.py -i INPUT_DIR -a ALIGN_IMG_OR_NOT -s SAMPLE_METHOD
 ```
 
 ## 成果
+### 夜城　＠象山
+#### 原圖
+![](./our_imgs/Elephant_mountain_101/DSC00174-2.JPG)
+#### Response Curve
+![](./results/Elephant_mountain_101/Response_curve.png)
+#### Radiance Map
+![](./results/Elephant_mountain_101/Radiance_map.png)
+#### HDR 結果
+![](./results/Elephant_mountain_101/ldr_0.2.jpg)
+
 ### 曾經風光的巨輪　＠基隆港
 #### 原圖
 ![](./our_imgs/ship/ship_5.jpg)
