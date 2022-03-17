@@ -75,9 +75,11 @@ python main.py -i INPUT_DIR -a ALIGN_IMG_OR_NOT -s SAMPLE_METHOD
 ```python
 def get_parser():
     parser = argparse.ArgumentParser(description='my description')
-    parser.add_argument('-i', '--input_dir', default='./imgs', type=str)
-    parser.add_argument('-a', '--align_img', default='True', type=str)
-    parser.add_argument('-s', '--sample_method', default='uniform', type=str)
+    parser.add_argument('-i', '--input_dir', default='./imgs', type=str, help='Folder of input images.')
+    parser.add_argument('-a', '--align_img', default='True', type=str, help='Whether to align img or not.')
+    parser.add_argument('-p', '--plot', default='True', type=str, help='Whether to plot result or not.')
+    parser.add_argument('-s', '--sample_method', default='uniform', type=str, help='The way to sample points [uniform / random]')
+    parser.add_argument('-k', '--scene_key', default='0.3', type=str, help='How light or dark the scene is. [0.0, 1.0]')
     return parser
 ```
 
@@ -116,3 +118,28 @@ $ln E_i = \frac{\sum_{j=1}^P w(Z_{ij})(g(Z_{ij}) - ln\Delta t_j)}{\sum_{j=1}^P w
 其中 g 函式即為剛剛求得的 Response Curve。
 
 ![](./results/room/radiance_map.png)
+
+## Tone Mapping
+我們使用的Tone mapping演算法是Reinhard的版本。
+基本上按照公式實作Global operator的部分:
+
+1. 首先計算整個場景的平均illuminance
+
+    $ \bar{L}_w = \exp\begin{pmatrix}\frac{1}{N}\sum_{x,y}log(\delta + L_w(x,y))\end{pmatrix}$
+
+2. 接著根據給定的key調整整個場景的亮度
+
+    $ L_m(x,y) = \frac{a}{\bar{L}_w} L_w(x,y)$
+
+3. 計算最後的結果，並將最亮的0.1% radiance mapping到1
+
+    $ L_d(x,y) = \frac{L_m(x,y)\begin{pmatrix}1+\frac{L_m(x,y)}{L_{white}^2(x,y)}\end{pmatrix}}{1+L_m(x,y)} $
+
+    其中 $L_{white}^2(x,y)$ 表示多少的radiance以上會被mapping到1
+
+4. 最後將結果從 [0, 1] mapping到可以顯示的RGB範圍 [0, 255]
+    ```python
+    result[:, :, 0] = np.minimum(Ld * radianceMap[:, :, 0] / Lw * 255, 255)
+    result[:, :, 1] = np.minimum(Ld * radianceMap[:, :, 1] / Lw * 255, 255)
+    result[:, :, 2] = np.minimum(Ld * radianceMap[:, :, 2] / Lw * 255, 255)
+    ```
