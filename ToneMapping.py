@@ -73,7 +73,7 @@ def toneMapping_Reinhard_np(radianceMap, alpha):
     # Find maximum luminance from all pixels
     sortedLw = np.sort(Lw)
     # The most 5000 brightest luminance will be mapped to 1
-    Lwhite = sortedLw[sortedLw.shape[0] - 5000]
+    Lwhite = sortedLw[int(sortedLw.shape[0] * 0.999)]
     Ld = (Lm * (1 + Lm / (Lwhite * Lwhite))) / (1 + Lm)
     
     return Lw.reshape(height, width), Ld.reshape(height, width)

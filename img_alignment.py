@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-def img2MTB(img):
+def img2MTB(img, isAlign: bool):
     """_summary_
 
     Args:
@@ -13,6 +13,8 @@ def img2MTB(img):
         OPENCV_IMG: an img thresholding with medium value
         OPENCV_IMG: a mask within medium +- 10
     """    
+    if not isAlign:
+        return None, None
     
     img_h, img_w = img.shape[0], img.shape[1]
     mtb_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)

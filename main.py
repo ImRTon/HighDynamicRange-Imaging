@@ -13,11 +13,13 @@ import exifread
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import ToneMapping
+import time
 
 def get_parser():
     parser = argparse.ArgumentParser(description='my description')
     parser.add_argument('-i', '--input_dir', default='./imgs', type=str, help='Folder of input images.')
     parser.add_argument('-a', '--align_img', default='True', type=str, help='Whether to align img or not.')
+    parser.add_argument('-p', '--plot', default='True', type=str, help='Whether to plot result or not.')
     parser.add_argument('-s', '--sample_method', default='uniform', type=str, help='The way to sample points [uniform / random]')
     parser.add_argument('-k', '--scene_key', default='0.3', type=str, help='How light or dark the scene is. [0.0, 1.0]')
     return parser
@@ -44,6 +46,8 @@ if __name__ == '__main__':
     ]
     '''
 
+    total_time = 0
+    start = time.time()
     parser = get_parser()
     args = parser.parse_args()
     av_brightness = 0
@@ -65,7 +69,7 @@ if __name__ == '__main__':
             img_contents.append({
                 'filepath': img_filePath,
                 'data': img,
-                'MTBImg': imgAlignUtils.img2MTB(img),
+                'MTBImg': imgAlignUtils.img2MTB(img, strtobool(args.align_img)),
                 "offset": {"x": 0, "y": 0},
                 'brightness': img_mean[2] * 0.299 + img_mean[1] * 0.587 + img_mean[0] * 0.114,
                 'exif': exif
@@ -115,23 +119,30 @@ if __name__ == '__main__':
     gg, _ = hdr_utils.g_solver(sample_pixel_vals[1], exposures, lamba, weightings)
     bg, _ = hdr_utils.g_solver(sample_pixel_vals[0], exposures, lamba, weightings)
 
-    plt.figure(figsize=(10,10))
-    plt.plot(rg,range(256), 'r')
-    plt.plot(gg,range(256), 'g')
-    plt.plot(bg,range(256), 'b')
-    plt.ylabel('Z (Energy)')
-    plt.xlabel('log(X)')
-    plt.show()
+    total_time += time.time() - start
+    if strtobool(args.plot):
+        plt.figure(figsize=(10,10))
+        plt.plot(rg,range(256), 'r')
+        plt.plot(gg,range(256), 'g')
+        plt.plot(bg,range(256), 'b')
+        plt.ylabel('Z (Energy)')
+        plt.xlabel('log(X)')
+        plt.show()
 
+    start = time.time()
     img_shape = img_contents[0]['alignedImg'].shape
 
     hdr_img = hdr_utils.get_radiance_map_np(pixel_vals, [bg, gg, rg], np.array(exposures), np.array(weightings), img_shape)
+    cv2.imwrite('hdr_result.hdr', hdr_img)
+    total_time += time.time() - start
     
-    plt.figure(figsize=(12, 8))
-    plt.imshow(np.log(cv2.cvtColor(hdr_img, cv2.COLOR_BGR2GRAY)), cmap='jet')
-    plt.colorbar()
-    plt.show()
+    if strtobool(args.plot):
+        plt.figure(figsize=(12, 8))
+        plt.imshow(np.log(cv2.cvtColor(hdr_img, cv2.COLOR_BGR2GRAY)), cmap='jet')
+        plt.colorbar()
+        plt.show()
 
+    start = time.time()
     ## Tone mapping
     print("Start tone mapping")
     key = float(args.scene_key)
@@ -139,3 +150,6 @@ if __name__ == '__main__':
     result = ToneMapping.mapToRGB_np(Lw, Ld, hdr_img)
     
     cv2.imwrite("ldr_" + str(key) + ".jpg", result)
+    
+
+    print("Total time cost:", time.time() - start + total_time)
