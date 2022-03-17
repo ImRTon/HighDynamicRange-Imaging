@@ -143,3 +143,10 @@ $ln E_i = \frac{\sum_{j=1}^P w(Z_{ij})(g(Z_{ij}) - ln\Delta t_j)}{\sum_{j=1}^P w
     result[:, :, 1] = np.minimum(Ld * radianceMap[:, :, 1] / Lw * 255, 255)
     result[:, :, 2] = np.minimum(Ld * radianceMap[:, :, 2] / Lw * 255, 255)
     ```
+
+## 心得
+這份作業運用了許多生成照片背後的原理，從中學習到了包含相機的pipeline、利用多張曝光照片估算HDR的技術，以及用來生成不同影像效果的Tonemapping演算法。
+
+我們也實際走訪了城市，並使用實作好的程式生成了屬於自己的HDR照片，透過參數的fine tune，觀察同樣的圖片下生成的不同效果。
+
+此外為了加速程式的運算效率，我們也研究了numpy的使用方式，避免使用多個巢狀for迴圈，因而造成計算時間過長。加速後效果也確實令人滿意。
