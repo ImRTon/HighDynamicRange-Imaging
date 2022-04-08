@@ -6,6 +6,13 @@ We implemented `Image Alignment using MTB`, `Solve Response Curve`, `Radiance Ma
 > NTUST CGLab M11015117 湯濬澤\
 > NTUST CGLab M11015029 張立彥
 
+## 資料夾位置
+```
+我們自己的圖片  ./SourceCode/HighDynamicRange-Imaging/our_imgs
+HDR 成果    ./SourceCode/HighDynamicRange-Imaging/results
+執行檔  ./SourceCode/HighDynamicRange-Imaging/main.exe
+```
+
 ## Environment
 ```
 Python 3.8
@@ -35,6 +42,8 @@ pip install -r requirements.txt
 ```
 python main.py -i INPUT_DIR -a ALIGN_IMG_OR_NOT -s SAMPLE_METHOD
 ```
+
+或是透過 CMD 執行 main.exe
 
 ## 成果
 ### 夜城　＠象山
@@ -75,7 +84,7 @@ python main.py -i INPUT_DIR -a ALIGN_IMG_OR_NOT -s SAMPLE_METHOD
 ```python
 def get_parser():
     parser = argparse.ArgumentParser(description='my description')
-    parser.add_argument('-i', '--input_dir', default='./imgs', type=str, help='Folder of input images.')
+    parser.add_argument('-i', '--input_dir', default='./data/imgs', type=str, help='Folder of input images.')
     parser.add_argument('-a', '--align_img', default='True', type=str, help='Whether to align img or not.')
     parser.add_argument('-p', '--plot', default='True', type=str, help='Whether to plot result or not.')
     parser.add_argument('-s', '--sample_method', default='uniform', type=str, help='The way to sample points [uniform / random]')
@@ -102,7 +111,7 @@ def get_parser():
 ## Response Curve
 由於解 Response Curve 需要曝光時間作為參數，因此我們透過套件將圖片的 Exif 資訊讀入，可以拿到曝光時間。對其取 $log$ 後，對 RGB 三個 Channel 分別解 SVD，這邊主要參考[論文](http://www.pauldebevec.com/Research/HDR/debevec-siggraph97.pdf)附上的 Matlab Code。
 
-```python
+``` python
 x = np.linalg.lstsq(A, b, rcond=None)[0]
 ```
  Response Curve

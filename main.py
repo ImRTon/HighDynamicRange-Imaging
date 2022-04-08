@@ -17,7 +17,7 @@ import time
 
 def get_parser():
     parser = argparse.ArgumentParser(description='my description')
-    parser.add_argument('-i', '--input_dir', default='./imgs', type=str, help='Folder of input images.')
+    parser.add_argument('-i', '--input_dir', default='data/imgs', type=str, help='Folder of input images.')
     parser.add_argument('-a', '--align_img', default='True', type=str, help='Whether to align img or not.')
     parser.add_argument('-p', '--plot', default='True', type=str, help='Whether to plot result or not.')
     parser.add_argument('-s', '--sample_method', default='uniform', type=str, help='The way to sample points [uniform / random]')
